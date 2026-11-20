@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>MicroTremor &amp; HR Analyzer</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --surface: rgba(17, 24, 39, 0.82);
+      --surface-2: rgba(30, 41, 59, 0.7);
+      --border: rgba(148, 163, 184, 0.16);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 28px);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.14), transparent 45%),
+        radial-gradient(circle at 85% 20%, rgba(52, 211, 153, 0.12), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      min-height: 100dvh;
+    }
+
+    .app {
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      gap: 10px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .pill-btn {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .pill-btn.active {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.55);
+      color: #7dd3fc;
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-badge {
+      font-size: 0.74rem;
+      text-transform: none;
+      letter-spacing: 0;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-weight: 600;
+      background: rgba(148, 163, 184, 0.16);
+      color: var(--muted);
+    }
+
+    .status-badge.ok {
+      background: rgba(52, 211, 153, 0.16);
+      color: var(--accent-2);
+    }
+
+    .status-badge.warn {
+      background: rgba(251, 191, 36, 0.16);
+      color: var(--warn);
+    }
+
+    .status-badge.bad {
+      background: rgba(248, 113, 113, 0.16);
+      color: var(--danger);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button.primary,
+    button.secondary {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.15s ease;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #041019;
+    }
+
+    .progress-wrap {
+      margin-top: 12px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.16);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.12s linear;
+    }
+
+    canvas {
+      width: 100%;
+      height: 140px;
+      display: block;
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .metric {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 14px;
+      padding: 11px;
+    }
+
+    .metric .k {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .metric .v {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    .metric .u {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .verdict {
+      margin-top: 12px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.75);
+      font-size: 0.9rem;
+    }
+
+    .verdict strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    details {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text);
+      list-style: none;
+    }
+
+    code {
+      background: rgba(15, 23, 42, 0.95);
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: #7dd3fc;
+      font-size: 0.78rem;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>MicroTremor &amp; HR</h1>
+        <div class="subtitle">30s Hand-Mikrobewegung vs. Apple Watch Herzfrequenz</div>
+      </div>
+      <button id="demoBtn" class="pill-btn" type="button">Demo: Aus</button>
+    </header>
+
+    <section class="card">
+      <div class="card-title">
+        <span>1. Messung &amp; Referenz</span>
+        <span id="sensorStatus" class="status-badge">Sensor gesperrt</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="watchHr">Apple Watch Puls (BPM)</label>
+          <input id="watchHr" type="number" min="35" max="220" step="1" value="68" />
+        </div>
+        <div class="field">
+          <label for="sampleRate">Abtastrate (effektiv)</label>
+          <input id="sampleRate" type="number" value="0" disabled />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="permBtn" class="secondary" type="button">Sensoren aktivieren</button>
+        <button id="startBtn" class="primary" type="button" disabled>30s Messung starten</button>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span id="phaseLabel">Bereit – iPhone ruhig in der Hand halten</span>
+          <span id="timerLabel">0.0 / 30.0 s</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="hint">
+        Tipp: Ruhig sitzen, Unterarm locker abstützen oder iPhone sanft in der Hand halten. Grobe Handbewegungen werden herausgefiltert.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">
+        <span>2. Live-Mikrobewegung (gefiltert, m/s²)</span>
+        <span id="rmsLive" class="status-badge">RMS: 0.0000</span>
+      </div>
+      <canvas id="waveCanvas" width="520" height="140"></canvas>
+    </section>
+
+    <section class="card">
+      <div class="card-title">
+        <span>3. Analyse &amp; Vergleich</span>
+        <span id="signalBadge" class="status-badge">Noch keine Messung</span>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="k">iPhone-Frequenz</div>
+          <div id="estHr" class="v">–</div>
+          <div class="u">geschätzte BPM</div>
+        </div>
+        <div class="metric">
+          <div class="k">Apple Watch</div>
+          <div id="refHr" class="v">–</div>
+          <div class="u">Referenz BPM</div>
+        </div>
+        <div class="metric">
+          <div class="k">Korrelation / SNR</div>
+          <div id="corrMetric" class="v">–</div>
+          <div id="corrSub" class="u">Signalstärke</div>
+        </div>
+      </div>
+
+      <div id="verdictBox" class="verdict">
+        <strong>Noch keine Auswertung</strong>
+        Starte eine 30-Sekunden-Messung, um zu prüfen, ob die Mikrobewegungen deiner Hand ein zur Apple Watch passendes Pulssignal (Ballistokardiographie / Mikrovibration) zeigen.
+      </div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>Apple Watch Automation (Kurzbefehl) &amp; Methodik</summary>
+        <p style="margin-top: 8px;">
+          <strong>Kurzbefehl-Tipp:</strong> Du kannst in iOS Kurzbefehlen die neueste Herzfrequenz aus Apple Health lesen und diese Seite mit <code>?hr=72</code> öffnen – der Apple-Watch-Wert wird dann automatisch vorausgefüllt.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Hinweis:</strong> Handbewegungen überlagern feine ballistokardiographische Impulse (BCG) oft deutlich. Ein Treffer innerhalb von ±4 BPM bei klarem Spektralpeak und passender Hüllkurven-Korrelation deutet auf ein korrelierendes Signal hin, ersetzt aber kein medizinisches Messgerät.
+        </p>
+      </details>
+    </section>
+  </div>
+
+  <script>
+    const DURATION_MS = 30000;
+    const MIN_BPM = 42;
+    const MAX_BPM = 180;
+
+    const state = {
+      permissionGranted: false,
+      recording: false,
+      demoMode: false,
+      startTime: 0,
+      lastTime: 0,
+      rawSamples: [],      // { t, mag }
+      filteredSamples: [], // { t, val }
+      lpSlow: 0,
+      lpFast: 0,
+      demoTimer: null,
+      rafId: null
+    };
+
+    const el = {
+      demoBtn: document.getElementById("demoBtn"),
+      sensorStatus: document.getElementById("sensorStatus"),
+      watchHr: document.getElementById("watchHr"),
+      sampleRate: document.getElementById("sampleRate"),
+      permBtn: document.getElementById("permBtn"),
+      startBtn: document.getElementById("startBtn"),
+      phaseLabel: document.getElementById("phaseLabel"),
+      timerLabel: document.getElementById("timerLabel"),
+      progressFill: document.getElementById("progressFill"),
+      rmsLive: document.getElementById("rmsLive"),
+      canvas: document.getElementById("waveCanvas"),
+      signalBadge: document.getElementById("signalBadge"),
+      estHr: document.getElementById("estHr"),
+      refHr: document.getElementById("refHr"),
+      corrMetric: document.getElementById("corrMetric"),
+      corrSub: document.getElementById("corrSub"),
+      verdictBox: document.getElementById("verdictBox")
+    };
+
+    const ctx = el.canvas.getContext("2d");
+
+    // URL-Parameter ?hr=72 unterstützen (z.B. aus Apple Kurzbefehlen)
+    const params = new URLSearchParams(window.location.search);
+    const urlHr = Number(params.get("hr"));
+    if (!Number.isNaN(urlHr) && urlHr >= 35 && urlHr <= 220) {
+      el.watchHr.value = Math.round(urlHr);
+    }
+
+    function setBadge(target, text, type = "") {
+      target.textContent = text;
+      target.className = "status-badge" + (type ? " " + type : "");
+    }
+
+    function pushSample(tSec, ax, ay, az) {
+      // Kombinierte Beschleunigungsmagnitude (ohne Gravitation via Hochpassfilter)
+      const mag = Math.sqrt(ax * ax + ay * ay + az * az);
+
+      // Langsamer Tiefpass (~0.6 Hz) entfernt grobe Hand-/Armdrift
+      // Schneller Tiefpass (~18 Hz) glättet hochfrequentes Sensorrauschen
+      const dt = state.lastSampleT ? Math.max(0.002, Math.min(0.05, tSec - state.lastSampleT)) : 0.016;
+      state.lastSampleT = tSec;
+
+      const alphaSlow = dt / (0.26 + dt);
+      const alphaFast = dt / (0.012 + dt);
+
+      state.lpSlow += alphaSlow * (mag - state.lpSlow);
+      state.lpFast += alphaFast * (mag - state.lpFast);
+
+      const bandPassed = state.lpFast - state.lpSlow;
+
+      state.rawSamples.push({ t: tSec, mag });
+      state.filteredSamples.push({ t: tSec, val: bandPassed });
+
+      // Nur Daten der letzten 32 Sekunden behalten
+      const cutoff = tSec - 32;
+      while (state.filteredSamples.length > 0 && state.filteredSamples[0].t < cutoff) {
+        state.filteredSamples.shift();
+      }
+      while (state.rawSamples.length > 0 && state.rawSamples[0].t < cutoff) {
+        state.rawSamples.shift();
+      }
+
+      // Effektive Abtastrate schätzen
+      if (state.filteredSamples.length > 10) {
+        const span = state.filteredSamples[state.filteredSamples.length - 1].t - state.filteredSamples[0].t;
+        if (span > 0.2) {
+          const hz = Math.round((state.filteredSamples.length - 1) / span);
+          el.sampleRate.value = hz;
+        }
+      }
+
+      // Live-RMS der letzten Sekunde anzeigen
+      const recent = state.filteredSamples.filter(s => s.t >= tSec - 1.0);
+      if (recent.length > 0) {
+        const meanSq = recent.reduce((acc, s) => acc + s.val * s.val, 0) / recent.length;
+        el.rmsLive.textContent = "RMS: " + Math.sqrt(meanSq).toFixed(4);
+      }
+    }
+
+    function handleMotionEvent(event) {
+      if (state.demoMode) return;
+      const acc = event.acceleration || event.accelerationIncludingGravity;
+      if (!acc) return;
+      const ax = acc.x || 0;
+      const ay = acc.y || 0;
+      const az = acc.z || 0;
+      const tSec = performance.now() / 1000;
+      pushSample(tSec, ax, ay, az);
+    }
+
+    async function requestSensorPermission() {
+      if (typeof DeviceMotionEvent === "undefined") {
+        setBadge(el.sensorStatus, "Nicht unterstützt", "bad");
+        alert("Dieses Gerät oder dieser Browser unterstützt DeviceMotionEvent nicht.");
+        return;
+      }
+
+      try {
+        if (typeof DeviceMotionEvent.requestPermission === "function") {
+          const res = await DeviceMotionEvent.requestPermission();
+          if (res !== "granted") {
+            setBadge(el.sensorStatus, "Abgelehnt", "bad");
+            return;
+          }
+        }
+        window.removeEventListener("devicemotion", handleMotionEvent);
+        window.addEventListener("devicemotion", handleMotionEvent, { passive: true });
+        state.permissionGranted = true;
+        el.startBtn.disabled = false;
+        setBadge(el.sensorStatus, "Sensor aktiv", "ok");
+        el.phaseLabel.textContent = "Bereit – 30s Messung kann starten";
+      } catch (err) {
+        setBadge(el.sensorStatus, "HTTPS nötig", "warn");
+        alert("Sensorzugriff fehlgeschlagen. Stelle sicher, dass die Seite über HTTPS geöffnet ist.");
+      }
+    }
+
+    function startDemoFeed() {
+      stopDemoFeed();
+      const t0 = performance.now() / 1000;
+      let tick = 0;
+      state.demoTimer = setInterval(() => {
+        tick++;
+        const nowSec = performance.now() / 1000 - t0;
+        const watchBpm = Number(el.watchHr.value) || 68;
+        const fHz = watchBpm / 60;
+        // Simulierter leichter Puls-Mikroimpuls + leichte Handdrift + Rauschen
+        const drift = 0.08 * Math.sin(2 * Math.PI * 0.25 * nowSec);
+        const pulse = 0.018 * Math.pow(Math.max(0, Math.sin(Math.PI * fHz * nowSec)), 6);
+        const noise = (Math.random() - 0.5) * 0.008;
+        const total = 9.81 + drift + pulse + noise;
+        pushSample(performance.now() / 1000, noise, drift, total);
+      }, 20); // 50 Hz Demo-Rate
+    }
+
+    function stopDemoFeed() {
+      if (state.demoTimer) {
+        clearInterval(state.demoTimer);
+        state.demoTimer = null;
+      }
+    }
+
+    function toggleDemoMode() {
+      state.demoMode = !state.demoMode;
+      el.demoBtn.textContent = state.demoMode ? "Demo: An" : "Demo: Aus";
+      el.demoBtn.classList.toggle("active", state.demoMode);
+      if (state.demoMode) {
+        state.permissionGranted = true;
+        el.startBtn.disabled = false;
+        setBadge(el.sensorStatus, "Demo-Sensor", "warn");
+        startDemoFeed();
+      } else {
+        stopDemoFeed();
+        setBadge(el.sensorStatus, state.permissionGranted ? "Sensor aktiv" : "Sensor gesperrt", state.permissionGranted ? "ok" : "");
+      }
+    }
+
+    function startMeasurement() {
+      if (!state.permissionGranted && !state.demoMode) return;
+      const nowMs = performance.now();
+      state.recording = true;
+      state.startTime = nowMs;
+      state.lastTime = nowMs;
+
+      // Nur frische Samples ab Startzeitpunkt erfassen
+      const startSec = nowMs / 1000;
+      state.filteredSamples = state.filteredSamples.filter(s => s.t >= startSec);
+      state.rawSamples = state.rawSamples.filter(s => s.t >= startSec);
+
+      el.startBtn.disabled = true;
+      el.permBtn.disabled = true;
+      el.phaseLabel.textContent = "Messung läuft – iPhone ruhig halten…";
+      setBadge(el.signalBadge, "Misst (30s)", "warn");
+    }
+
+    function resampleUniform(samples, targetHz = 50) {
+      if (samples.length < 10) return [];
+      const tStart = samples[0].t;
+      const tEnd = samples[samples.length - 1].t;
+      const duration = tEnd - tStart;
+      if (duration < 5) return [];
+
+      const n = Math.floor(duration * targetHz);
+      const out = new Float64Array(n);
+      let idx = 0;
+
+      for (let i = 0; i < n; i++) {
+        const t = tStart + i / targetHz;
+        while (idx < samples.length - 2 && samples[idx + 1].t < t) {
+          idx++;
+        }
+        const s0 = samples[idx];
+        const s1 = samples[idx + 1] || s0;
+        const span = Math.max(1e-6, s1.t - s0.t);
+        const w = Math.max(0, Math.min(1, (t - s0.t) / span));
+        out[i] = s0.val + w * (s1.val - s0.val);
+      }
+
+      // Mittelwert entfernen
+      let mean = 0;
+      for (let i = 0; i < n; i++) mean += out[i];
+      mean /= n;
+      for (let i = 0; i < n; i++) out[i] -= mean;
+
+      return out;
+    }
+
+    function computeEnvelopeCorrelation(signal, fs, targetBpm) {
+      // Vergleicht die Hüllkurve des Signals mit einer Referenz-Pulsfolge bei targetBpm
+      const n = signal.length;
+      if (n < fs * 5) return 0;
+
+      const absSig = new Float64Array(n);
+      // Glatte Hüllkurve (~0.25s Fenster)
+      const win = Math.max(1, Math.round(fs * 0.25));
+      for (let i = 0; i < n; i++) {
+        let sum = 0;
+        let cnt = 0;
+        for (let j = Math.max(0, i - win); j <= Math.min(n - 1, i + win); j++) {
+          sum += Math.abs(signal[j]);
+          cnt++;
+        }
+        absSig[i] = sum / cnt;
+      }
+
+      const fHz = targetBpm / 60;
+      const ref = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        const t = i / fs;
+        ref[i] = Math.pow(Math.max(0, Math.sin(Math.PI * fHz * t)), 6);
+      }
+
+      // Beste Phasenverschiebung über eine Periode suchen
+      const periodSamples = Math.max(1, Math.round(fs / fHz));
+      let bestCorr = -1;
+
+      for (let shift = 0; shift < periodSamples; shift += Math.max(1, Math.floor(periodSamples / 24))) {
+        let mA = 0, mB = 0;
+        for (let i = 0; i < n; i++) {
+          mA += absSig[i];
+          mB += ref[(i + shift) % n];
+        }
+        mA /= n;
+        mB /= n;
+
+        let num = 0, denA = 0, denB = 0;
+        for (let i = 0; i < n; i++) {
+          const da = absSig[i] - mA;
+          const db = ref[(i + shift) % n] - mB;
+          num += da * db;
+          denA += da * da;
+          denB += db * db;
+        }
+        const den = Math.sqrt(denA * denB);
+        if (den > 1e-12) {
+          const r = num / den;
+          if (r > bestCorr) bestCorr = r;
+        }
+      }
+
+      return Math.max(0, bestCorr);
+    }
+
+    function analyzeMeasurement(watchBpm) {
+      const fs = 50;
+      const sig = resampleUniform(state.filteredSamples, fs);
+
+      if (sig.length < fs * 8) {
+        setBadge(el.signalBadge, "Zu wenig Daten", "bad");
+        el.verdictBox.innerHTML = `
+          <strong>Messung unvollständig</strong>
+          Es wurden zu wenige Bewegungssamples erfasst. Bitte prüfe die Sensorfreigabe und halte das iPhone während der gesamten 30 Sekunden.
+        `;
+        return;
+      }
+
+      // RMS der gesamten Messung
+      let sumSq = 0;
+      for (let i = 0; i < sig.length; i++) sumSq += sig[i] * sig[i];
+      const rms = Math.sqrt(sumSq / sig.length);
+
+      // Goertzel / DFT-Spektrum im Bereich MIN_BPM .. MAX_BPM (in 0.5 BPM Schritten)
+      const candidates = [];
+      for (let bpm = MIN_BPM; bpm <= MAX_BPM; bpm += 0.5) {
+        const freq = bpm / 60;
+        const omega = (2 * Math.PI * freq) / fs;
+        const coeff = 2 * Math.cos(omega);
+        let q0 = 0, q1 = 0, q2 = 0;
+
+        for (let i = 0; i < sig.length; i++) {
+          q0 = coeff * q1 - q2 + sig[i];
+          q2 = q1;
+          q1 = q0;
+        }
+        const power = Math.sqrt(q1 * q1 + q2 * q2 - coeff * q1 * q2) / sig.length;
+        candidates.push({ bpm, power });
+      }
+
+      // Durchschnittliche Spektralleistung als Rauschbasis
+      const avgPower = candidates.reduce((a, b) => a + b.power, 0) / candidates.length;
+
+      // Besten Peak finden
+      let best = candidates[0];
+      for (const c of candidates) {
+        if (c.power > best.power) best = c;
+      }
+
+      // Leistung nahe der Apple Watch Herzfrequenz (±4 BPM) prüfen
+      let nearWatch = candidates[0];
+      for (const c of candidates) {
+        if (Math.abs(c.bpm - watchBpm) <= 4 && c.power > nearWatch.power) {
+          nearWatch = c;
+        }
+      }
+
+      const snrPeak = avgPower > 1e-12 ? best.power / avgPower : 0;
+      const snrWatch = avgPower > 1e-12 ? nearWatch.power / avgPower : 0;
+      const envCorr = computeEnvelopeCorrelation(sig, fs, watchBpm);
+
+      const diffBpm = Math.abs(best.bpm - watchBpm);
+      const hasCorrelatedSignal =
+        rms > 0.0008 &&
+        ((diffBpm <= 4.5 && snrPeak >= 1.55) || (snrWatch >= 1.75 && envCorr >= 0.14));
+
+      const confidenceScore = Math.min(
+        99,
+        Math.max(
+          5,
+          Math.round(
+            (hasCorrelatedSignal ? 55 : 15) +
+            Math.min(25, (snrWatch - 1) * 18) +
+            Math.min(20, envCorr * 80) -
+            Math.min(25, diffBpm * 1.5)
+          )
+        )
+      );
+
+      el.estHr.textContent = best.bpm.toFixed(1);
+      el.refHr.textContent = String(watchBpm);
+      el.corrMetric.textContent = `${confidenceScore}%`;
+      el.corrSub.textContent = `SNR ${snrPeak.toFixed(2)} · Δ ${diffBpm.toFixed(1)} BPM`;
+
+      if (hasCorrelatedSignal) {
+        setBadge(el.signalBadge, "Signal korreliert", "ok");
+        el.verdictBox.style.borderColor = "rgba(52, 211, 153, 0.45)";
+        el.verdictBox.innerHTML = `
+          <strong>Korrelierendes Signal erkannt</strong>
+          Aus den Mikrobewegungen deiner Hand ergibt sich eine dominante Frequenz von <strong>${best.bpm.toFixed(1)} BPM</strong> (Apple Watch: <strong>${watchBpm} BPM</strong>, Abweichung: <strong>${diffBpm.toFixed(1)} BPM</strong>, Signal-Rausch-Verhältnis: <strong>${snrPeak.toFixed(2)}×</strong>). Unter ruhigen Bedingungen lässt sich hiermit ein zur Herzfrequenz passendes Bewegungs- bzw. Pulssignal feststellen.
+        `;
+      } else {
+        setBadge(el.signalBadge, "Kein klares Signal", "warn");
+        el.verdictBox.style.borderColor = "rgba(251, 191, 36, 0.45)";
+        el.verdictBox.innerHTML = `
+          <strong>Kein zuverlässig korrelierendes Signal gefunden</strong>
+          Dominante Bewegungsfrequenz: <strong>${best.bpm.toFixed(1)} BPM</strong> gegenüber Apple Watch: <strong>${watchBpm} BPM</strong> (Abweichung: <strong>${diffBpm.toFixed(1)} BPM</strong>, RMS: <strong>${rms.toFixed(4)} m/s²</strong>). Überlagerungen durch Handhaltung, Griffstärke oder Umgebungsbewegung verdecken das schwache ballistokardiographische Signal.
+        `;
+      }
+    }
+
+    function renderLoop(nowMs) {
+      const elapsedMs = state.recording ? Math.min(DURATION_MS, nowMs - state.startTime) : 0;
+      const pct = state.recording ? (elapsedMs / DURATION_MS) * 100 : 0;
+
+      el.progressFill.style.width = pct + "%";
+      el.timerLabel.textContent = `${(elapsedMs / 1000).toFixed(1)} / 30.0 s`;
+
+      if (state.recording && elapsedMs >= DURATION_MS) {
+        state.recording = false;
+        el.startBtn.disabled = false;
+        el.permBtn.disabled = false;
+        el.phaseLabel.textContent = "30s Messung abgeschlossen";
+        const watchBpm = Math.max(35, Math.min(220, Number(el.watchHr.value) || 68));
+        analyzeMeasurement(watchBpm);
+      }
+
+      // Wellenform zeichnen
+      const w = el.canvas.width;
+      const h = el.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Nulllinie
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.18)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
+
+      const samples = state.filteredSamples;
+      if (samples.length > 1) {
+        const tEnd = samples[samples.length - 1].t;
+        const windowSec = 6.0; // Letzte 6 Sekunden anzeigen
+        const visible = samples.filter(s => s.t >= tEnd - windowSec);
+
+        let maxAbs = 0.015;
+        for (const s of visible) {
+          const a = Math.abs(s.val);
+          if (a > maxAbs) maxAbs = a;
+        }
+        // Sanfte Autokalibrierung
+        maxAbs = Math.min(maxAbs, 0.5);
+
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < visible.length; i++) {
+          const s = visible[i];
+          const x = ((s.t - (tEnd - windowSec)) / windowSec) * w;
+          const norm = Math.max(-1, Math.min(1, s.val / maxAbs));
+          const y = h / 2 - norm * (h * 0.42);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      state.rafId = requestAnimationFrame(renderLoop);
+    }
+
+    el.permBtn.addEventListener("click", requestSensorPermission);
+    el.startBtn.addEventListener("click", startMeasurement);
+    el.demoBtn.addEventListener("click", toggleDemoMode);
+
+    state.rafId = requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>
